@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="ta">
+<head>
+<meta charset="UTF-8" >
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" >
+<title data-id="th-modified">Calculator</title>
+
+<link rel="manifest" href="manifest.json" >
+<link rel="apple-touch-icon" href="icon-192.png" >
+<meta name="apple-mobile-web-app-capable" content="yes" >
+<meta name="mobile-web-app-capable" content="yes" >
+<meta name="apple-mobile-web-app-status-bar-style" content="black" >
+<meta name="apple-mobile-web-app-title" content="Calculator" >
+<meta name="theme-color" content="#000000" >
+
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; height: 100%; overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Tamil", sans-serif; }
+  #root { height: 100vh; width: 100%; }
+  button { font-family: inherit; }
+
+  /* ---------- கால்குலேட்டர் ---------- */
+  .calc { background: #000; height: 100vh; display: flex; flex-direction: column;
+    justify-content: flex-end; padding: 14px; }
+  .calc-display { flex: 1; display: flex; flex-direction: column; justify-content: flex-end;
+    align-items: flex-end; padding: 10px 14px 26px; min-height: 0; }
+  .calc-display-text { color: #fff; font-weight: 300; font-size: 60px; line-height: 1;
+    word-break: break-all; max-width: 100%; }
+  .calc-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; padding-bottom: 6px; }
+  .calc-btn { height: 70px; border-radius: 50%; font-size: 26px; border: none;
+    display: flex; align-items: center; justify-content: center; }
+  .calc-btn:active { filter: brightness(0.8); }
+  .btn-digit { background: #333333; color: #fff; }
+  .btn-func { background: #a5a5a5; color: #000; }
+  .btn-op { background: #ff9f0a; color: #fff; }
+  .span2 { grid-column: span 2; justify-content: flex-start; padding-left: 28px; }
+
+  /* ---------- அரட்டை பட்டியல் ---------- */
+  .screen { height: 100vh; display: flex; flex-direction: column; background: #ece5dd; }
+  .topbar { background: #075e54; color: #fff; padding: 22px 16px 12px; display: flex;
+    align-items: center; justify-content: space-between; flex-shrink: 0; }
+  .topbar h1 { font-size: 19px; font-weight: 600; margin: 0; }
+  .topbar .icons { display: flex; gap: 18px; align-items: center; font-size: 17px; }
+  .topbar .icons button, .topbar .back { background: none; border: none; color: #fff;
+    font-size: 17px; cursor: pointer; padding: 0; line-height: 1; }
+  .list { flex: 1; overflow-y: auto; background: #fff; -webkit-overflow-scrolling: touch; }
+  .item { width: 100%; display: flex; gap: 12px; align-items: center; padding: 12px 16px;
+    border-bottom: 1px solid #f0f0f0; background: none; border: none; text-align: left; cursor: pointer; }
+  .avatar { width: 46px; height: 46px; border-radius: 50%; display: flex; align-items: center;
+    justify-content: center; color: #fff; font-weight: 600; font-size: 17px; flex-shrink: 0; }
+  .item-body { flex: 1; min-width: 0; }
+  .item-top { display: flex; justify-content: space-between; align-items: baseline; }
+  .item-name { font-weight: 500; font-size: 15px; color: #111; }
+  .item-time { font-size: 12px; color: #999; flex-shrink: 0; margin-left: 8px; }
+  .item-bottom { display: flex; justify-content: space-between; align-items: center; margin-top: 2px; }
+  .item-msg { font-size: 13.5px; color: #667781; overflow: hidden; text-overflow: ellipsis;
+    white-space: nowrap; }
+  .badge { background: #25d366; color: #fff; font-size: 11px; border-radius: 50%; width: 19px;
+    height: 19px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-left: 8px; }
+
+  /* ---------- தனிப்பட்ட சாட் ---------- */
+  .chat-header { gap: 10px; }
+  .chat-header .info { flex: 1; min-width: 0; }
+  .chat-header .name { font-weight: 500; font-size: 15px; line-height: 1.2; }
+  .chat-header .status { font-size: 11.5px; color: #d6e8e5; line-height: 1.2; }
+  .messages { flex: 1; overflow-y: auto; padding: 10px 10px; display: flex; flex-direction: column;
+    gap: 5px; -webkit-overflow-scrolling: touch; }
+  .row { display: flex; }
+  .row.me { justify-content: flex-end; }
+  .row.them { justify-content: flex-start; }
+  .bubble { max-width: 76%; padding: 7px 9px; border-radius: 9px; font-size: 14.5px;
+    line-height: 1.3; box-shadow: 0 1px 1px rgba(0,0,0,0.08); }
+  .bubble.me { background: #dcf8c6; }
+  .bubble.them { background: #ffffff; }
+  .bubble .text { color: #111; word-break: break-word; }
+  .bubble .meta { display: flex; justify-content: flex-end; gap: 3px; align-items: center; margin-top: 2px; }
+  .bubble .time { font-size: 10.5px; color: #93a09c; }
+  .ticks { color: #4fc3f7; font-size: 12px; }
+  .input-row { background: #ece5dd; padding: 8px; display: flex; align-items: center; gap: 8px;
+    flex-shrink: 0; }
+  .input-pill { flex: 1; background: #fff; border-radius: 24px; display: flex; align-items: center;
+    padding: 8px 12px; gap: 8px; }
+  .input-pill input { flex: 1; border: none; outline: none; font-size: 14.5px; background: transparent;
+    min-width: 0; font-family: inherit; }
+  .icon-gray { color: #8b9994; font-size: 18px; flex-shrink: 0; }
+  .send-btn { background: #075e54; color: #fff; border: none; width: 42px; height: 42px;
+    border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 17px;
+    cursor: pointer; flex-shrink: 0; }
+</style>
+<meta property="og:title" content="Calculator" data-id="th-modified" ><meta name="description" content="index" data-id="th-modified" ><meta property="og:description" content="index" data-id="th-modified" ><meta property="og:image" content="https://tiiny.host/assets/logo-purple-bg.png" data-id="th-modified" ><meta property="og:image:width" content="1501" data-id="th-modified" ><meta property="og:image:height" content="1501" data-id="th-modified" ><meta property="og:image:type" content="image/png" data-id="th-modified" ><meta property="og:url" content="https://xentoo1447.tiiny.site/" data-id="th-modified" ><meta property="og:type" content="website" data-id="th-modified" ><script defer data-domain="xentoo1447.tiiny.site" src="https://analytics.tiiny.site/js/plausible.js"></script><script type="text/javascript" src="https://tiiny.host/ad-script.js"></script></head>
+<body>
+<div id="root"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---------------- ரகசிய கடவுக்குறி ---------------- */
+  var SECRET_CODE = "5193";
+  var STORE_KEY = "calc_chat_messages_v1";
+
+  var contacts = [
+    { id: "amma", name: "அம்மா", avatar: "அ", color: "#FF8A65", status: "ஆன்லைனில் உள்ளார்" },
+    { id: "priya", name: "பிரியா", avatar: "பி", color: "#BA68C8", status: "இன்று காலை 08:50 பார்த்தது" },
+    { id: "office", name: "அலுவலக குழு", avatar: "👥", color: "#4DB6AC", status: "5 பேர்" },
+    { id: "raj", name: "ராஜ்", avatar: "ரா", color: "#64B5F6", status: "ஆன்லைனில் உள்ளார்" }
+  ];
+
+  var seedMessages = {
+    amma: [
+      { id: "1", sender: "them", text: "மகனே சாப்பிட்டியா?", time: "09:12" },
+      { id: "2", sender: "me", text: "இன்னும் இல்ல அம்மா, இப்போ சாப்பிடுறேன்", time: "09:15" },
+      { id: "3", sender: "them", text: "சீக்கிரம் சாப்பிடு, உடம்பு கவனிச்சுக்கோ", time: "09:16" }
+    ],
+    priya: [
+      { id: "1", sender: "them", text: "நாளைக்கு சினிமா போகலாமா?", time: "08:30" },
+      { id: "2", sender: "me", text: "சூப்பர் ஐடியா! எத்தனை மணிக்கு?", time: "08:45" },
+      { id: "3", sender: "them", text: "மாலை 6 மணி show பார்க்கலாம்", time: "08:50" }
+    ],
+    office: [
+      { id: "1", sender: "them", text: "நாளைய மீட்டிங் 10 மணிக்கு", time: "07:00" },
+      { id: "2", sender: "me", text: "சரி, நான் வந்துடுவேன்", time: "07:05" }
+    ],
+    raj: [
+      { id: "1", sender: "them", text: "லேட்டஸ்ட் கிரிக்கெட் மேட்ச் பார்த்தியா?", time: "06:40" },
+      { id: "2", sender: "me", text: "இல்ல டா, ஸ்கோர் என்ன?", time: "06:45" },
+      { id: "3", sender: "them", text: "இந்தியா 250க்கு ஜெயிச்சாங்க!", time: "06:50" }
+    ]
+  };
+
+  var autoReplies = [
+    "சரி சரி", "ஓகே சொல்லு", "கொஞ்சம் பிஸியா இருக்கேன், பிறகு பேசலாமா",
+    "அப்படியா!", "நல்லா இருக்கு 👍", "சரி, நான் பார்க்கிறேன்"
+  ];
+
+  function loadMessages() {
+    try {
+      var raw = localStorage.getItem(STORE_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch (e) {}
+    return JSON.parse(JSON.stringify(seedMessages));
+  }
+  function saveMessages() {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(state.messages)); } catch (e) {}
+  }
+
+  var state = {
+    screen: "calculator",
+    calcInput: "0",
+    messages: loadMessages(),
+    unread: { amma: 1, priya: 0, office: 0, raj: 2 },
+    activeContactId: null,
+    draft: ""
+  };
+
+  function nowTime() {
+    var d = new Date();
+    var h = d.getHours();
+    var m = d.getMinutes().toString().padStart(2, "0");
+    var ampm = h >= 12 ? "PM" : "AM";
+    h = h % 12 || 12;
+    return h + ":" + m + " " + ampm;
+  }
+  function esc(s) {
+    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+  function getContact(id) {
+    for (var i = 0; i < contacts.length; i++) if (contacts[i].id === id) return contacts[i];
+    return null;
+  }
+  function lastMessageOf(id) {
+    var arr = state.messages[id] || [];
+    return arr.length ? arr[arr.length - 1] : null;
+  }
+
+  var root = document.getElementById("root");
+
+  function render() {
+    if (state.screen === "calculator") root.innerHTML = renderCalculator();
+    else if (state.screen === "chats") root.innerHTML = renderChatList();
+    else if (state.screen === "chat") root.innerHTML = renderChatScreen();
+    attachListeners();
+  }
+
+  /* ================== கால்குலேட்டர் ================== */
+  function renderCalculator() {
+    function row(html) { return html; }
+    return (
+      '<div class="calc">' +
+        '<div class="calc-display"><div class="calc-display-text">' + esc(formatDisplay(state.calcInput)) + '</div></div>' +
+        '<div class="calc-grid">' +
+          '<button class="calc-btn btn-func" data-action="clear">C</button>' +
+          '<button class="calc-btn btn-func" data-action="plusminus">+/-</button>' +
+          '<button class="calc-btn btn-func" data-action="backspace">⌫</button>' +
+          '<button class="calc-btn btn-op" data-op="÷">÷</button>' +
+
+          '<button class="calc-btn btn-digit" data-digit="7">7</button>' +
+          '<button class="calc-btn btn-digit" data-digit="8">8</button>' +
+          '<button class="calc-btn btn-digit" data-digit="9">9</button>' +
+          '<button class="calc-btn btn-op" data-op="×">×</button>' +
+
+          '<button class="calc-btn btn-digit" data-digit="4">4</button>' +
+          '<button class="calc-btn btn-digit" data-digit="5">5</button>' +
+          '<button class="calc-btn btn-digit" data-digit="6">6</button>' +
+          '<button class="calc-btn btn-op" data-op="-">−</button>' +
+
+          '<button class="calc-btn btn-digit" data-digit="1">1</button>' +
+          '<button class="calc-btn btn-digit" data-digit="2">2</button>' +
+          '<button class="calc-btn btn-digit" data-digit="3">3</button>' +
+          '<button class="calc-btn btn-op" data-op="+">+</button>' +
+
+          '<button class="calc-btn btn-digit span2" data-digit="0">0</button>' +
+          '<button class="calc-btn btn-digit" data-action="dot">.</button>' +
+          '<button class="calc-btn btn-op" data-action="equals">=</button>' +
+        '</div>' +
+      '</div>'
+    );
+  }
+  function formatDisplay(val) {
+    if (val.length > 11) {
+      var num = parseFloat(val);
+      if (!isNaN(num)) return num.toExponential(4);
+    }
+    return val;
+  }
+  function pressDigit(d) {
+    state.calcInput = state.calcInput === "0" ? d : (state.calcInput.length < 14 ? state.calcInput + d : state.calcInput);
+  }
+  function pressDot() {
+    var parts = state.calcInput.split(/[+\-×÷]/);
+    var last = parts[parts.length - 1];
+    if (last.indexOf(".") === -1) state.calcInput += ".";
+  }
+  function pressOperator(op) {
+    if (state.calcInput === "0") return;
+    var lastChar = state.calcInput[state.calcInput.length - 1];
+    if ("+-×÷".indexOf(lastChar) !== -1) state.calcInput = state.calcInput.slice(0, -1) + op;
+    else state.calcInput += op;
+  }
+  function pressClear() { state.calcInput = "0"; }
+  function pressBackspace() {
+    state.calcInput = state.calcInput.length > 1 ? state.calcInput.slice(0, -1) : "0";
+  }
+  function pressPlusMinus() {
+    if (state.calcInput === "0") return;
+    state.calcInput = state.calcInput.startsWith("-") ? state.calcInput.slice(1) : "-" + state.calcInput;
+  }
+  function pressEquals() {
+    if (state.calcInput === SECRET_CODE) {
+      state.calcInput = "0";
+      state.screen = "chats";
+      return;
+    }
+    try {
+      var expr = state.calcInput.replace(/×/g, "*").replace(/÷/g, "/");
+      if (!/^-?[0-9.+\-*/]+$/.test(expr)) throw new Error("invalid");
+      var result = Function('"use strict";return (' + expr + ")")();
+      if (!isFinite(result)) throw new Error("invalid");
+      state.calcInput = String(Math.round(result * 1e10) / 1e10);
+    } catch (e) {
+      state.calcInput = "பிழை";
+    }
+  }
+
+  /* ================== அரட்டை பட்டியல் ================== */
+  function renderChatList() {
+    var items = contacts.map(function (c) {
+      var last = lastMessageOf(c.id);
+      var unread = state.unread[c.id] || 0;
+      return (
+        '<button class="item" data-open="' + c.id + '">' +
+          '<div class="avatar" style="background:' + c.color + '">' + esc(c.avatar) + '</div>' +
+          '<div class="item-body">' +
+            '<div class="item-top">' +
+              '<span class="item-name">' + esc(c.name) + '</span>' +
+              '<span class="item-time">' + (last ? esc(last.time) : "") + '</span>' +
+            '</div>' +
+            '<div class="item-bottom">' +
+              '<span class="item-msg">' + (last ? esc(last.text) : esc(c.status)) + '</span>' +
+              (unread > 0 ? '<span class="badge">' + unread + '</span>' : '') +
+            '</div>' +
+          '</div>' +
+        '</button>'
+      );
+    }).join("");
+
+    return (
+      '<div class="screen">' +
+        '<div class="topbar">' +
+          '<h1>அரட்டைகள்</h1>' +
+          '<div class="icons">' +
+            '<button title="தேடு">🔍</button>' +
+            '<button data-action="lock" title="கால்குலேட்டருக்கு திரும்பு">🔒</button>' +
+            '<button title="மேலும்">⋮</button>' +
+          '</div>' +
+        '</div>' +
+        '<div class="list">' + items + '</div>' +
+      '</div>'
+    );
+  }
+
+  /* ================== தனிப்பட்ட சாட் ================== */
+  function renderChatScreen() {
+    var c = getContact(state.activeContactId);
+    if (!c) { state.screen = "chats"; return renderChatList(); }
+    var msgs = state.messages[c.id] || [];
+    var bubbles = msgs.map(function (m) {
+      return (
+        '<div class="row ' + m.sender + '">' +
+          '<div class="bubble ' + m.sender + '">' +
+            '<div class="text">' + esc(m.text) + '</div>' +
+            '<div class="meta"><span class="time">' + esc(m.time) + '</span>' +
+            (m.sender === "me" ? '<span class="ticks">✓✓</span>' : '') + '</div>' +
+          '</div>' +
+        '</div>'
+      );
+    }).join("");
+
+    return (
+      '<div class="screen">' +
+        '<div class="topbar chat-header">' +
+          '<button class="back" data-action="back">←</button>' +
+          '<div class="avatar" style="background:' + c.color + ';width:38px;height:38px;font-size:15px;">' + esc(c.avatar) + '</div>' +
+          '<div class="info">' +
+            '<div class="name">' + esc(c.name) + '</div>' +
+            '<div class="status">' + esc(c.status) + '</div>' +
+          '</div>' +
+          '<div class="icons"><button>🎥</button><button>📞</button></div>' +
+        '</div>' +
+        '<div class="messages" id="msgArea">' + bubbles + '</div>' +
+        '<div class="input-row">' +
+          '<div class="input-pill">' +
+            '<span class="icon-gray">😊</span>' +
+            '<input id="draftInput" type="text" placeholder="செய்தியை தட்டச்சு செய்யவும்" value="' + esc(state.draft) + '" />' +
+            '<span class="icon-gray">📎</span>' +
+          '</div>' +
+          '<button class="send-btn" data-action="send">➤</button>' +
+        '</div>' +
+      '</div>'
+    );
+  }
+
+  function scrollMessagesToBottom() {
+    var el = document.getElementById("msgArea");
+    if (el) el.scrollTop = el.scrollHeight;
+  }
+
+  function sendMessage() {
+    var c = getContact(state.activeContactId);
+    var text = (state.draft || "").trim();
+    if (!text || !c) return;
+    if (!state.messages[c.id]) state.messages[c.id] = [];
+    state.messages[c.id].push({ id: Date.now().toString(), sender: "me", text: text, time: nowTime() });
+    state.draft = "";
+    saveMessages();
+    render();
+    scrollMessagesToBottom();
+
+    var contactId = c.id;
+    setTimeout(function () {
+      if (!state.messages[contactId]) state.messages[contactId] = [];
+      var reply = autoReplies[Math.floor(Math.random() * autoReplies.length)];
+      state.messages[contactId].push({ id: (Date.now() + 1).toString(), sender: "them", text: reply, time: nowTime() });
+      saveMessages();
+      if (state.screen === "chat" && state.activeContactId === contactId) {
+        render();
+        scrollMessagesToBottom();
+      }
+    }, 1400 + Math.random() * 1200);
+  }
+
+  function attachListeners() {
+    if (state.screen === "calculator") {
+      root.querySelectorAll("[data-digit]").forEach(function (b) {
+        b.addEventListener("click", function () { pressDigit(b.getAttribute("data-digit")); render(); });
+      });
+      root.querySelectorAll("[data-op]").forEach(function (b) {
+        b.addEventListener("click", function () { pressOperator(b.getAttribute("data-op")); render(); });
+      });
+      var clearBtn = root.querySelector('[data-action="clear"]');
+      if (clearBtn) clearBtn.addEventListener("click", function () { pressClear(); render(); });
+      var bsBtn = root.querySelector('[data-action="backspace"]');
+      if (bsBtn) bsBtn.addEventListener("click", function () { pressBackspace(); render(); });
+      var pmBtn = root.querySelector('[data-action="plusminus"]');
+      if (pmBtn) pmBtn.addEventListener("click", function () { pressPlusMinus(); render(); });
+      var dotBtn = root.querySelector('[data-action="dot"]');
+      if (dotBtn) dotBtn.addEventListener("click", function () { pressDot(); render(); });
+      var eqBtn = root.querySelector('[data-action="equals"]');
+      if (eqBtn) eqBtn.addEventListener("click", function () { pressEquals(); render(); });
+    } else if (state.screen === "chats") {
+      root.querySelectorAll("[data-open]").forEach(function (b) {
+        b.addEventListener("click", function () {
+          var id = b.getAttribute("data-open");
+          state.activeContactId = id;
+          state.unread[id] = 0;
+          state.screen = "chat";
+          render();
+          scrollMessagesToBottom();
+        });
+      });
+      var lockBtn = root.querySelector('[data-action="lock"]');
+      if (lockBtn) lockBtn.addEventListener("click", function () { state.screen = "calculator"; render(); });
+    } else if (state.screen === "chat") {
+      var backBtn = root.querySelector('[data-action="back"]');
+      if (backBtn) backBtn.addEventListener("click", function () { state.screen = "chats"; render(); });
+      var sendBtn = root.querySelector('[data-action="send"]');
+      if (sendBtn) sendBtn.addEventListener("click", sendMessage);
+      var input = document.getElementById("draftInput");
+      if (input) {
+        input.addEventListener("input", function (e) { state.draft = e.target.value; });
+        input.addEventListener("keydown", function (e) { if (e.key === "Enter") sendMessage(); });
+        input.focus();
+      }
+      scrollMessagesToBottom();
+    }
+  }
+
+  render();
+
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", function () {
+      navigator.serviceWorker.register("sw.js").catch(function () {});
+    });
+  }
+})();
+</script>
+</body>
+</html>
